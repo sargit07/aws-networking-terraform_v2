@@ -1,0 +1,77 @@
+In the provided Terraform configuration, the S3 bucket for the remote backend is not created by the code itself. Instead, it's referenced in the terraform block:
+
+
+terraform {
+  backend "s3" {
+    bucket         = "my-terraform-state-bucket"
+    key            = "networking/terraform.tfstate"
+    region         = "us-east-1"
+    encrypt        = true
+    dynamodb_table = "terraform-locks"
+  }
+}
+
+🔍 Explanation:
+Terraform does not allow the backend resources (like S3 and DynamoDB for state) to be provisioned in the same configuration that uses them.
+
+This is because Terraform needs the backend to already exist before it can initialize and use it.
+
+✅ What You Need to Do:
+You should manually or separately provision:
+
+S3 Bucket (e.g., my-terraform-state-bucket)
+
+DynamoDB Table (e.g., terraform-locks) for state locking
+
+🛠️ Optional: Bootstrap Script (Run Once Manually)
+You can use this separate script (not as part of your main TF config):
+
+hcl
+Copy
+Edit
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_s3_bucket" "tf_state" {
+  bucket = "my-terraform-state-bucket"
+  acl    = "private"
+
+  versioning {
+    enabled = true
+  }
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm     = "aws:kms"
+        kms_master_key_id = aws_kms_key.tf_state.id
+      }
+    }
+  }
+
+  tags = {
+    Name = "Terraform State Bucket"
+  }
+}
+
+resource "aws_dynamodb_table" "tf_locks" {
+  name         = "terraform-locks"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "LockID"
+
+  attribute {
+    name = "LockID"
+    type = "S"
+  }
+
+  tags = {
+    Name = "Terraform Lock Table"
+  }
+}
+
+resource "aws_kms_key" "tf_state" {
+  description = "KMS key for Terraform state encryption"
+  enable_key_rotation = true
+}
+🚀 Once created, you can delete this script or move it to a bootstrap folder. It should not be part of the main infrastructure project.
