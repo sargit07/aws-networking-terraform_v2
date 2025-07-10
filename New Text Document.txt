@@ -26,9 +26,6 @@ DynamoDB Table (e.g., terraform-locks) for state locking
 🛠️ Optional: Bootstrap Script (Run Once Manually)
 You can use this separate script (not as part of your main TF config):
 
-hcl
-Copy
-Edit
 provider "aws" {
   region = "us-east-1"
 }
