@@ -1,6 +1,7 @@
 # aws-networking-terraform_v2
 
-How to Run:
+#How to Run:
+
 terraform init
 terraform validate
 terraform plan -var-file="terraform.tfvars"
